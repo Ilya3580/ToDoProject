@@ -9,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.todoproject.databinding.ActivityTaskBinding
 
 class ActivityTask : AppCompatActivity() {
-
     private lateinit var binding: ActivityTaskBinding
     private lateinit var task : InfoTask
     private var flagSave = false
