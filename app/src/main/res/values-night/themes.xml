@@ -1,0 +1,48 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.ToDoProject" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/BackPrimary</item>
+        <item name="colorPrimaryVariant">@color/BackPrimary</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/Blue</item>
+        <item name="colorSecondaryVariant">@color/teal_200</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <!-- Customize your theme here. -->
+
+    </style>
+
+    <style name="DialogThemeTimePicker" parent="@style/Theme.AppCompat.Light.Dialog">
+        <item name="android:timePickerStyle">@style/TimePickerDialogStyle</item>
+        <item name="android:textColorSecondary">@color/LabelPrimary</item>
+    </style>
+
+    <style name="TimePickerDialogStyle" parent="@android:style/Widget.Material.Light.TimePicker">
+        <item name="android:timePickerMode">clock</item>
+        <item name="android:headerBackground">@color/Blue</item>
+        <item name="android:numbersTextColor">@color/LabelPrimary</item>
+        <item name="android:textColor">@color/LabelPrimary</item>
+        <item name="android:textColorSecondary">@color/LabelPrimary</item>
+        <item name="android:numbersSelectorColor">@color/Blue</item>
+        <item name="android:numbersBackgroundColor">@color/BackElevated</item>
+
+    </style>
+    <color name="SupportSeparator">#33FFFFFF</color>
+    <color name="SupportOverlay">#52000000</color>
+    <color name="LabelPrimary">#FFFFFF</color>
+    <color name="LabelSecondary">#99FFFFFF</color>
+    <color name="LabelTertiary">#66FFFFFF</color>
+    <color name="LabelDisable">#26FFFFFF</color>
+    <color name="Red">#FF453A</color>
+    <color name="Green">#32D74B</color>
+    <color name="Blue">#0A84FF</color>
+    <color name="Gray">#8E8E93</color>
+    <color name="GrayLight">#48484A</color>
+    <color name="White">#FFFFFF</color>
+    <color name="BackPrimary">#161618</color>
+    <color name="BackSecondary">#252528</color>
+    <color name="BackElevated">#3C3C3F</color>
+</resources>

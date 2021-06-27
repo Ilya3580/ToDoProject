@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ToDoProject</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_task">ScrollingActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="save">СОХРАНИТЬ</string>
+    <string name="little">Низкая</string>
+    <string name="big">!!Высокая</string>
+    <string name="importance">Важность</string>
+    <string name="no">Нет</string>
+    <string name="deadline">Сделать до</string>
+    <string name="delete">Удалить</string>
+    <string name="whatTask">Что надо сделать...</string>
+</resources>

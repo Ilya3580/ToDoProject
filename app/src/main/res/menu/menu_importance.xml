@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/item_not"
+        android:title="@string/no"
+        />
+    <item
+        android:id="@+id/item_little"
+        android:title="@string/little"
+        />
+    <item
+        android:id="@+id/item_big"
+        android:title="@string/big"
+        />
+</menu>
