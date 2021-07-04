@@ -34,7 +34,7 @@
                 android:textSize="18sp"
                 android:textColor="@color/Blue"
                 android:layout_weight="1"
-                android:id='@+id/save'
+                android:id='@+id/saveTextView'
                 android:layout_gravity="center"
                 android:gravity="center|right"
                 android:text="@string/save"

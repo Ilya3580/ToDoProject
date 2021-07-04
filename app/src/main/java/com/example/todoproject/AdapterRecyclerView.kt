@@ -10,8 +10,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 
-class AdapterRecyclerView(private val values : ArrayList<InfoTask>
-        ):RecyclerView.Adapter<AdapterRecyclerView.MyViewHolder>() {
+class AdapterRecyclerView(
+    private val values : ArrayList<InfoTask>
+        ):RecyclerView.Adapter<AdapterRecyclerView.MyViewHolder>(), ItemTouchHelperAdapter {
 
     var flagScope = false
 
@@ -43,6 +44,8 @@ class AdapterRecyclerView(private val values : ArrayList<InfoTask>
         super.onViewDetachedFromWindow(holder)
     }
 
+
+
     class MyViewHolder(itemView : View) : RecyclerView.ViewHolder(itemView){
         var textTitleTextView : TextView
         var textTextView : TextView
@@ -55,6 +58,14 @@ class AdapterRecyclerView(private val values : ArrayList<InfoTask>
             infoImageButton = itemView.findViewById(R.id.infoImageButton)
         }
 
+
+    }
+
+    override fun onSwipeLeft(position: Int) {
+
+    }
+
+    override fun onSwipeRight(position: Int) {
 
     }
 

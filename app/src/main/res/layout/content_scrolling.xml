@@ -72,16 +72,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <TextView
-                android:text = "@string/deadline"
-                android:id = "@+id/deadline"
-                android:textSize="18sp"
-                android:textColor="@color/LabelPrimary"
+            <LinearLayout
+                android:layout_gravity="center"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:text = "@string/deadline"
+                    android:id = "@+id/deadlineTitle"
+                    android:textSize="18sp"
+                    android:textColor="@color/LabelPrimary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id = "@+id/deadlineText"
+                    android:textSize="15sp"
+                    android:textColor="@color/Blue"
+                    android:visibility="gone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
 
             <Switch
+                android:layout_gravity="center"
                 android:layout_weight="1"
+                android:id="@+id/switchDeadline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"

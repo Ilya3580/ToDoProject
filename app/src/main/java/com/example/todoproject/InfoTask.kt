@@ -3,7 +3,8 @@ package com.example.todoproject
 import java.lang.Exception
 
 class InfoTask(var textTitle : String = "", var importance : Int = IMPORTANCE_NOT,
-               var status : Int = DONE, var deadline : String? = null, var stopDeadline : String? = null) {
+               var status : Int = DONE, var deadline : Long? = null,
+               var stopDeadline : Long? = null) {
     companion object{
         val DONE = 1
         val FAILED = 2
@@ -16,7 +17,7 @@ class InfoTask(var textTitle : String = "", var importance : Int = IMPORTANCE_NO
         public fun parsString(str : String) : InfoTask?{
             return try{
                 val mas = str.split("$")
-                InfoTask(mas[0], mas[2].toInt(), mas[3].toInt(), mas[4], mas[5])
+                InfoTask(mas[0], mas[2].toInt(), mas[3].toInt(), mas[4].toLong(), mas[5].toLong())
             }catch (e : Exception){
                 null
             }

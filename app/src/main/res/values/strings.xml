@@ -12,4 +12,16 @@
     <string name="deadline">Сделать до</string>
     <string name="delete">Удалить</string>
     <string name="whatTask">Что надо сделать...</string>
+    <string name="month0">января</string>
+    <string name="month1">февраля</string>
+    <string name="month2">марта</string>
+    <string name="month3">апреля</string>
+    <string name="month4">мая</string>
+    <string name="month5">июня</string>
+    <string name="month6">июля</string>
+    <string name="month7">августа</string>
+    <string name="month8">сентября</string>
+    <string name="month9">октября</string>
+    <string name="month10">ноября</string>
+    <string name="month11">декабря</string>
 </resources>
