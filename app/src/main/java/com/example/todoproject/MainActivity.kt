@@ -1,105 +1,156 @@
 package com.example.todoproject
 
+import APIService.APIService
+import WorkerAndReceiver.SomeWorker
 import android.content.Intent
-import android.content.res.Configuration
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.ImageButton
-import android.widget.PopupMenu
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.constraintlayout.motion.widget.MotionLayout
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import java.io.Serializable
+import androidx.work.*
+import com.example.todoproject.databinding.ActivityMainBinding
+import dao.DatabaseStorage
+import dao.Task
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var settingButton: ImageButton
-    private lateinit var calendarButton: ImageButton
-    private lateinit var visibilityButton: ImageButton
-    private lateinit var motionLayout: MotionLayout
-    private lateinit var actionButton: FloatingActionButton
+    private lateinit var binding: ActivityMainBinding
     private var adapterRecyclerView: AdapterRecyclerView? = null
-    private lateinit var viewModelData: MyViewModel<Calendar>
+    private lateinit var mutableLiveDataDate: MutableLiveData<Calendar>
+    private lateinit var apiService: APIService
+
+    private val viewModelList: ViewModelList by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            setContentView(R.layout.activity_main_vertical)
-        } else {
-            setContentView(R.layout.activity_main_horizontal)
-        }
 
-        recyclerView = findViewById(R.id.recyclerView)
-        calendarButton = findViewById(R.id.iconCalendar)
-        settingButton = findViewById(R.id.iconSetting)
-        visibilityButton = findViewById(R.id.iconVisibility)
-        motionLayout = findViewById(R.id.motionLayout)
-        actionButton = findViewById(R.id.actionButton)
-        viewModelData = MyViewModel(null)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        val lst = ArrayList<InfoTask>()
-        for (i in 0 until 50) {
-            lst.add(InfoTask("aaa" + i, InfoTask.IMPORTANCE_NOT, InfoTask.DONE, 0L, 0L))
-        }
+        updateData(intent.getSerializableExtra("idName")?.toString())
 
-        adapterRecyclerView = AdapterRecyclerView(lst)
+        mutableLiveDataDate = MutableLiveData(null)
 
-        val callbackLeft: ItemTouchHelper.Callback =
-            SwipeToLeftCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)
-        val touchHelperLeft = ItemTouchHelper(callbackLeft)
-        touchHelperLeft.attachToRecyclerView(recyclerView)
-
-        val callbackRight: ItemTouchHelper.Callback =
-            SwipeToRightCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)
-        val touchHelperRight = ItemTouchHelper(callbackRight)
-        touchHelperRight.attachToRecyclerView(recyclerView)
-
-        recyclerView.adapter = adapterRecyclerView
-
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        settingButton.setOnClickListener {
-        }
-
-        calendarButton.setOnClickListener {
+        binding.iconCalendar.setOnClickListener {
             FunctionsProject.onCreateAlertDialogCalendar(
                 this,
-                viewModelData,
+                mutableLiveDataDate,
                 Calendar.getInstance().timeInMillis
             )
         }
 
-        actionButton.setOnClickListener {
+        binding.actionButton.setOnClickListener {
             val intent = Intent(this, ActivityTask::class.java)
             startActivity(intent)
         }
 
-
-        viewModelData.getUsersValue().observe(this, Observer {
-
+        mutableLiveDataDate.observe(this, {
+            //TODO("Действие с числом календаря")
         })
 
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBoolean("flagScope", (recyclerView.adapter as AdapterRecyclerView).flagScope)
+        try {
+            outState.putBoolean(
+                "flagScope",
+                (binding.recyclerView.adapter as AdapterRecyclerView).flagScope
+            )
+        } catch (e: Exception) {
+        }
         super.onSaveInstanceState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         val flagScope = savedInstanceState.getBoolean("flagScope")
         if (!flagScope) {
-            motionLayout.transitionToEnd()
+            binding.motionLayout.transitionToEnd()
         }
         super.onRestoreInstanceState(savedInstanceState)
     }
+
+    private fun updateData(id: String?) {
+        apiService = FunctionsProject.userService()
+        val builder = DatabaseStorage.build(applicationContext)
+        val handler = Handler(Looper.getMainLooper())
+        if (id == null) {
+            if (viewModelList.userList.value?.count() ?: 0 > 0) {
+                settingRecyclerView(viewModelList.userList.value!!)
+                return
+            } else {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val itemList = builder.taskDao().listTask()
+                    handler.post {
+                        settingRecyclerView(itemList)
+                    }
+                }
+
+            }
+        } else {
+            if (viewModelList.userList.value?.count() ?: 0 > 0) {
+                settingRecyclerView(viewModelList.userList.value!!)
+                return
+            } else {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val itemList = builder.taskDao().listTask()
+                    handler.post {
+                        viewModelList.userList.value = itemList
+                        settingWorker()
+                        settingRecyclerView(itemList)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun settingRecyclerView(lst: List<Task>) {
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
+        adapterRecyclerView = AdapterRecyclerView(lst)
+
+        val callbackLeft: ItemTouchHelper.Callback =
+            SwipeToLeftCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)
+        val touchHelperLeft = ItemTouchHelper(callbackLeft)
+        touchHelperLeft.attachToRecyclerView(binding.recyclerView)
+
+        val callbackRight: ItemTouchHelper.Callback =
+            SwipeToRightCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)
+        val touchHelperRight = ItemTouchHelper(callbackRight)
+        touchHelperRight.attachToRecyclerView(binding.recyclerView)
+
+        binding.recyclerView.adapter = adapterRecyclerView
+    }
+
+    private fun settingReceiver() {
+
+    }
+
+    private fun settingWorker() {
+        val constraint = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val someWorker = OneTimeWorkRequest.Builder(SomeWorker::class.java)
+            .setConstraints(constraint)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            "someWorker",
+            ExistingWorkPolicy.REPLACE,
+            someWorker
+        )
+    }
+
 
 }
 

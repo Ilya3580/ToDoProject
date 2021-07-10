@@ -1,17 +1,15 @@
 package com.example.todoproject
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import dao.Task
 
 class AdapterRecyclerView(
-    private val values : ArrayList<InfoTask>
+    private val values : List<Task>
         ):RecyclerView.Adapter<AdapterRecyclerView.MyViewHolder>(), ItemTouchHelperAdapter {
 
     var flagScope = false
@@ -27,12 +25,8 @@ class AdapterRecyclerView(
         if(position == 0){
             flagScope = true
         }
-        holder.textTitleTextView.text = values[position].textTitle
-        when(values[position].status){
-            InfoTask.DONE -> holder.checkOrUncheckImageButton.setImageResource(R.drawable.ic_done)
-            InfoTask.OVERDUE -> holder.checkOrUncheckImageButton.setImageResource(R.drawable.ic_unchecked_red)
-            InfoTask.FAILED -> holder.checkOrUncheckImageButton.setImageResource(R.drawable.ic_unchecked)
-        }
+        holder.textTitleTextView.text = values[position].text
+
     }
 
     override fun getItemCount(): Int = values.count()
@@ -62,10 +56,11 @@ class AdapterRecyclerView(
     }
 
     override fun onSwipeLeft(position: Int) {
-
+        notifyItemChanged(position)
     }
 
     override fun onSwipeRight(position: Int) {
+        notifyItemChanged(position)
 
     }
 
