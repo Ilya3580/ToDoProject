@@ -130,70 +130,32 @@ object FunctionsProject {
         return retrofit.create(APIService::class.java)
     }
 
-    public suspend fun listApi(
-        context: Context,
-        mutableLiveData: MutableLiveData<ArrayList<Task>>? = null
-    ) {
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val builder = chain.request().newBuilder()
-                val request = builder
-                    .addHeader("Authorization", "Bearer 8142b4fa951c4dd99fda81aab42b745c")
-                    .build()
-
-                chain.proceed(request)
-            }
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
-            .readTimeout(1, TimeUnit.MINUTES)
-            .writeTimeout(1, TimeUnit.MINUTES)
-            .build()
-
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl("https://d5dps3h13rv6902lp5c8.apigw.yandexcloud.net")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-
-        val userService: APIService = retrofit.create(APIService::class.java)
-
-        val scope = CoroutineScope(Dispatchers.IO)
-        scope.launch {
-            val builder = DatabaseStorage.build(context)
-            val listAct: List<TaskAct> = builder.taskDao().listTaskAct()
-            val list: List<Task> = builder.taskDao().listTask()
-            var listApi: List<Task> = userService.getTasks()
-
-            for (i in listAct) {
-                when (i.act) {
-                    TaskAct.ACT_ADD -> {
-                        userService.setTasks(list.find { it.id == i.id }!!)
-                    }
-                    TaskAct.ACT_DELETE -> {
-                        userService.deleteTasks(i.id)
-                    }
-                    TaskAct.ACT_UPDATE -> {
-                        if(listApi.find { it.id == i.id }!!.update_at!! < list.find { it.id == i.id }!!.update_at!!)
-                            userService.updateTasks(i.id)
-                    }
-                }
-
-                builder.taskDao().deleteTaskAct(i)
-            }
-            listApi = userService.getTasks()
-
-            for(i in listApi){
-                builder.taskDao().insertTask(i)
-            }
-
-            if(mutableLiveData != null){
-                val handler = Handler(Looper.getMainLooper())
-                handler.post {
-                    mutableLiveData.value = listApi
-                }
-            }
+    public fun convertDate(task : Task, context: Context) : String{
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = task.deadline!!
+        var str: String = calendar.get(Calendar.DAY_OF_MONTH).toString()
+        when (calendar.get(Calendar.MONTH)) {
+            0 -> str += " " + context.resources.getString(R.string.month0)
+            1 -> str += " " + context.resources.getString(R.string.month1)
+            2 -> str += " " + context.resources.getString(R.string.month2)
+            3 -> str += " " + context.resources.getString(R.string.month3)
+            4 -> str += " " + context.resources.getString(R.string.month4)
+            5 -> str += " " + context.resources.getString(R.string.month5)
+            6 -> str += " " + context.resources.getString(R.string.month6)
+            7 -> str += " " + context.resources.getString(R.string.month7)
+            8 -> str += " " + context.resources.getString(R.string.month8)
+            9 -> str += " " + context.resources.getString(R.string.month9)
+            10 -> str += " " + context.resources.getString(R.string.month10)
+            11 -> str += " " + context.resources.getString(R.string.month11)
         }
+
+        str += " " + calendar.get(Calendar.YEAR)
+
+        if (calendar.get(Calendar.HOUR) != 0 || calendar.get(Calendar.MINUTE) != 0) {
+            str += "\n${calendar.get(Calendar.HOUR)}:${calendar.get(Calendar.MINUTE)}"
+        }
+
+        return str
     }
 
 }

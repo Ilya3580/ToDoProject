@@ -14,10 +14,6 @@ interface APIService {
     suspend fun deleteTasks(@Path("id") id : String)
 
     @PUT("/tasks/{id}/")
-    suspend fun updateTasks(@Path("id") id : String)
+    suspend fun updateTasks(@Path("id") id : String, @Body task : Task)
 
-    @PUT("/tasks/{deleted: {listId}}, other: {listItems}")
-    suspend fun updateListItems(
-        @Path("listId") listId : List<String>,
-        @Path("listId") listItems : List<Task>) : List<Task>
 }

@@ -20,19 +20,35 @@ class SomeWorker(
         val scope = CoroutineScope(Dispatchers.IO)
         scope.launch {
             val listAct = withContext(Dispatchers.IO) {
-                    builder.taskDao().listTaskAct()
-                }
+                builder.taskDao().listTaskAct()
+            }
 
-            for(i in listAct){
-                val task = withContext(Dispatchers.IO){
+            val listApi = withContext(Dispatchers.IO) {
+                apiService.getTasks()
+            }
+
+            for (i in listAct) {
+                val task = withContext(Dispatchers.IO) {
                     builder.taskDao().findTask(i.id)
                 }
 
-                when(i.act){
+                when (i.act) {
                     TaskAct.ACT_ADD -> {
                         apiService.setTasks(task)
                     }
+
+                    TaskAct.ACT_DELETE -> {
+                        apiService.deleteTasks(task.id)
+                    }
+
+                    TaskAct.ACT_UPDATE -> {
+                        if(listApi.find { it.id == i.id }?.update_at ?: Long.MAX_VALUE < task.update_at ?: 0){
+                            apiService.updateTasks(task.id, task)
+                        }
+                    }
                 }
+
+                builder.taskDao().deleteTaskAct(i)
             }
         }
         return Result.success()

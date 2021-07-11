@@ -84,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         apiService = FunctionsProject.userService()
         val builder = DatabaseStorage.build(applicationContext)
         val handler = Handler(Looper.getMainLooper())
+        Log.d("TAGA", id.toString())
         if (id == null) {
             if (viewModelList.userList.value?.count() ?: 0 > 0) {
                 settingRecyclerView(viewModelList.userList.value!!)

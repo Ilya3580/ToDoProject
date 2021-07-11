@@ -185,31 +185,7 @@ class ActivityTask : AppCompatActivity() {
 
     private fun fixTextDeadline() {
         if (task.deadline != null) {
-            val calendar = Calendar.getInstance()
-            calendar.timeInMillis = task.deadline!!
-            var str: String = calendar.get(Calendar.DAY_OF_MONTH).toString()
-            when (calendar.get(Calendar.MONTH)) {
-                0 -> str += " " + resources.getString(R.string.month0)
-                1 -> str += " " + resources.getString(R.string.month1)
-                2 -> str += " " + resources.getString(R.string.month2)
-                3 -> str += " " + resources.getString(R.string.month3)
-                4 -> str += " " + resources.getString(R.string.month4)
-                5 -> str += " " + resources.getString(R.string.month5)
-                6 -> str += " " + resources.getString(R.string.month6)
-                7 -> str += " " + resources.getString(R.string.month7)
-                8 -> str += " " + resources.getString(R.string.month8)
-                9 -> str += " " + resources.getString(R.string.month9)
-                10 -> str += " " + resources.getString(R.string.month10)
-                11 -> str += " " + resources.getString(R.string.month11)
-            }
-
-            str += " " + calendar.get(Calendar.YEAR)
-
-            if (calendar.get(Calendar.HOUR) != 0 || calendar.get(Calendar.MINUTE) != 0) {
-                str += "\n${calendar.get(Calendar.HOUR)}:${calendar.get(Calendar.MINUTE)}"
-            }
-
-            binding.contentScrolling.deadlineText.text = str
+            binding.contentScrolling.deadlineText.text = FunctionsProject.convertDate(task, applicationContext)
             binding.contentScrolling.switchDeadline.isChecked = true
             binding.contentScrolling.deadlineText.visibility = View.VISIBLE
         }
