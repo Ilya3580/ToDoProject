@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun settingRecyclerView(lst: List<Task>) {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        adapterRecyclerView = AdapterRecyclerView(lst)
+        adapterRecyclerView = AdapterRecyclerView(lst as ArrayList<Task>)
 
         val callbackLeft: ItemTouchHelper.Callback =
             SwipeToLeftCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)

@@ -1,6 +1,5 @@
 package com.example.todoproject
 
-import WorkerAndReceiver.SomeWorker
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -9,10 +8,10 @@ import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.PopupMenu
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
-import androidx.room.Room
 import androidx.work.*
 import com.example.todoproject.databinding.ActivityTaskBinding
 import dao.DatabaseStorage
@@ -24,12 +23,14 @@ import java.util.*
 
 class ActivityTask : AppCompatActivity() {
     private lateinit var binding: ActivityTaskBinding
+
     @Volatile
     private lateinit var task: Task
     private var flagSave = false
 
     private lateinit var viewModelCalendar: MutableLiveData<Calendar>
     private lateinit var viewModelTime: MutableLiveData<Calendar>
+    private lateinit var builder: DatabaseStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,10 +39,13 @@ class ActivityTask : AppCompatActivity() {
 
         viewModelCalendar = MutableLiveData(null)
         viewModelTime = MutableLiveData(null)
+        builder = DatabaseStorage.build(applicationContext)
 
         task = if (savedInstanceState?.getSerializable("task") != null) {
+            flagSave = savedInstanceState.getSerializable("flagSave") as Boolean
             savedInstanceState.getSerializable("task") as Task
         } else {
+            flagSave = intent.getSerializableExtra("task") != null
             intent.getSerializableExtra("task") as? Task ?: Task(UUID.randomUUID().toString())
         }
 
@@ -51,32 +55,8 @@ class ActivityTask : AppCompatActivity() {
             onBackPressed()
         }
 
-        val builder = DatabaseStorage.build(applicationContext)
-
         binding.saveTextView.setOnClickListener {
-            val alert = FunctionsProject.startProgressBar(this)
-            task.text = binding.contentScrolling.editTextTask.text.toString()
-            task.update_at = Calendar.getInstance().time.time
-            if(!flagSave){
-                task.created_at = Calendar.getInstance().time.time
-            }
-            task.deadline = Calendar.getInstance().time.time
-            lifecycleScope.launch(Dispatchers.IO) {
-                val taskAct = TaskAct(task.id, TaskAct.ACT_ADD)
-                builder.taskDao().insertTaskAct(taskAct)
-                builder.taskDao().insertTask(task)
-                val handler = Handler(Looper.getMainLooper())
-                handler.post {
-                    FunctionsProject.stopProgressBar(alert)
-                    val intent = Intent(this@ActivityTask, MainActivity::class.java)
-                    intent.putExtra("idName", task.id)
-                    startActivity(intent)
-
-                }
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) {
+            clickSaveTextView()
         }
 
         binding.contentScrolling.importanceContainer.setOnClickListener {
@@ -94,17 +74,11 @@ class ActivityTask : AppCompatActivity() {
         }
 
         binding.contentScrolling.switchDeadline.setOnClickListener {
-            if (binding.contentScrolling.switchDeadline.isChecked) {
-                binding.contentScrolling.switchDeadline.isChecked = false
-                FunctionsProject.onCreateAlertDialogCalendar(
-                    this,
-                    viewModelCalendar,
-                    Calendar.getInstance().time.time
-                )
-            } else {
-                task.deadline = null
-                binding.contentScrolling.deadlineText.visibility = View.GONE
-            }
+            clickSwitch()
+        }
+
+        binding.contentScrolling.deleteContainer.setOnClickListener {
+            clickDelete()
         }
 
         viewModelCalendar.observe(this, {
@@ -175,21 +149,80 @@ class ActivityTask : AppCompatActivity() {
         }
 
         if (flagSave) {
-            binding.contentScrolling.deleteImage.setColorFilter(resources.getColor(R.color.Gray))
-            binding.contentScrolling.deleteText.setTextColor(resources.getColor(R.color.Gray))
-        } else {
             binding.contentScrolling.deleteImage.setColorFilter(resources.getColor(R.color.Red))
             binding.contentScrolling.deleteText.setTextColor(resources.getColor(R.color.Red))
+        } else {
+            binding.contentScrolling.deleteImage.setColorFilter(resources.getColor(R.color.Gray))
+            binding.contentScrolling.deleteText.setTextColor(resources.getColor(R.color.Gray))
         }
     }
 
     private fun fixTextDeadline() {
         if (task.deadline != null) {
-            binding.contentScrolling.deadlineText.text = FunctionsProject.convertDate(task, applicationContext)
+            binding.contentScrolling.deadlineText.text =
+                FunctionsProject.convertDate(task, applicationContext)
             binding.contentScrolling.switchDeadline.isChecked = true
             binding.contentScrolling.deadlineText.visibility = View.VISIBLE
         }
 
+    }
+
+    private fun clickSaveTextView() {
+        val builder = DatabaseStorage.build(applicationContext)
+        val alert = FunctionsProject.startProgressBar(this)
+
+        task.text = binding.contentScrolling.editTextTask.text.toString()
+        task.update_at = Calendar.getInstance().time.time
+        if (!flagSave) {
+            task.created_at = Calendar.getInstance().time.time
+        }
+        if (task.deadline == null) {
+            task.deadline = Calendar.getInstance().timeInMillis
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val taskAct = TaskAct(task.id, TaskAct.ACT_ADD)
+            builder.taskDao().insertTaskAct(taskAct)
+            builder.taskDao().insertTask(task)
+            startMainActivity(alert)
+        }
+    }
+
+    private fun clickSwitch() {
+        if (binding.contentScrolling.switchDeadline.isChecked) {
+            binding.contentScrolling.switchDeadline.isChecked = false
+            FunctionsProject.onCreateAlertDialogCalendar(
+                this,
+                viewModelCalendar,
+                Calendar.getInstance().time.time
+            )
+        } else {
+            task.deadline = null
+            binding.contentScrolling.deadlineText.visibility = View.GONE
+        }
+    }
+
+    private fun clickDelete() {
+        if (flagSave) {
+            val alert = FunctionsProject.startProgressBar(this)
+            lifecycleScope.launch(Dispatchers.IO) {
+                val taskAct = TaskAct(task.id, TaskAct.ACT_DELETE)
+                builder.taskDao().insertTaskAct(taskAct)
+                builder.taskDao().deleteTask(task)
+                startMainActivity(alert)
+            }
+        }
+    }
+
+    private fun startMainActivity(alert: AlertDialog) {
+        val handler = Handler(Looper.getMainLooper())
+        handler.post {
+            FunctionsProject.stopProgressBar(alert)
+            val intent = Intent(this@ActivityTask, MainActivity::class.java)
+            intent.putExtra("idName", task.id)
+            startActivity(intent)
+
+        }
     }
 
 }

@@ -1,6 +1,7 @@
 package com.example.todoproject
 
 import android.content.Context
+import android.content.Intent
 import android.view.ContextMenu
 import android.view.LayoutInflater
 import android.view.View
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class AdapterRecyclerView(
-    private val values : List<Task>
+    private val values : ArrayList<Task>
         ):RecyclerView.Adapter<AdapterRecyclerView.MyViewHolder>(), ItemTouchHelperAdapter {
 
     var flagScope = false
@@ -52,6 +53,19 @@ class AdapterRecyclerView(
         }
 
         holder.textTextView.text = FunctionsProject.convertDate(task, context)
+
+        holder.textTitleTextView.setOnClickListener {
+            onClick(values[position])
+        }
+        holder.textTextView.setOnClickListener {
+            onClick(values[position])
+        }
+        holder.statusTask.setOnClickListener {
+            onClick(values[position])
+        }
+        holder.infoImageButton.setOnClickListener {
+            onClick(values[position])
+        }
     }
 
     override fun getItemCount(): Int = values.count()
@@ -66,18 +80,10 @@ class AdapterRecyclerView(
 
 
     class MyViewHolder(itemView : View) : RecyclerView.ViewHolder(itemView){
-        var textTitleTextView : TextView
-        var textTextView : TextView
-        var statusTask : ImageButton
-        var infoImageButton : ImageButton
-        init {
-            textTitleTextView = itemView.findViewById(R.id.textTitleTextView)
-            textTextView = itemView.findViewById(R.id.textTextView)
-            statusTask = itemView.findViewById(R.id.statusTask)
-            infoImageButton = itemView.findViewById(R.id.infoImageButton)
-        }
-
-
+        var textTitleTextView : TextView = itemView.findViewById(R.id.textTitleTextView)
+        var textTextView : TextView = itemView.findViewById(R.id.textTextView)
+        var statusTask : ImageButton = itemView.findViewById(R.id.statusTask)
+        var infoImageButton : ImageButton = itemView.findViewById(R.id.infoImageButton)
     }
 
     override fun onSwipeLeft(position: Int) {
@@ -102,6 +108,12 @@ class AdapterRecyclerView(
 
             builder.taskDao().insertTaskAct(TaskAct(values[position].id, actStatus))
         }
+    }
+
+    private fun onClick(task : Task){
+        val intent = Intent(context, ActivityTask :: class.java)
+        intent.putExtra("task", task)
+        context.startActivity(intent)
     }
 
 }

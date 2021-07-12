@@ -28,22 +28,26 @@ class SomeWorker(
             }
 
             for (i in listAct) {
-                val task = withContext(Dispatchers.IO) {
-                    builder.taskDao().findTask(i.id)
-                }
+                val task = builder.taskDao().findTask(i.id)
 
                 when (i.act) {
                     TaskAct.ACT_ADD -> {
-                        apiService.setTasks(task)
+                        scope.launch {
+                            apiService.setTasks(task)
+                        }
                     }
 
                     TaskAct.ACT_DELETE -> {
-                        apiService.deleteTasks(task.id)
+                        scope.async {
+                            apiService.deleteTasks(task.id)
+                        }
                     }
 
                     TaskAct.ACT_UPDATE -> {
                         if(listApi.find { it.id == i.id }?.update_at ?: Long.MAX_VALUE < task.update_at ?: 0){
-                            apiService.updateTasks(task.id, task)
+                            scope.async {
+                                apiService.updateTasks(task.id, task)
+                            }
                         }
                     }
                 }
