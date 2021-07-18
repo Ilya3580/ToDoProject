@@ -1,7 +1,7 @@
 package com.example.todoproject
 
-import APIService.APIService
-import WorkerAndReceiver.SomeWorker
+import com.example.todoproject.api_Service.APIService
+import com.example.todoproject.worker_and_receiver.SomeWorker
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -10,14 +10,13 @@ import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.*
 import com.example.todoproject.databinding.ActivityMainBinding
-import dao.DatabaseStorage
-import dao.Task
+import com.example.todoproject.dao.DatabaseStorage
+import com.example.todoproject.dao.Task
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
@@ -151,8 +150,6 @@ class MainActivity : AppCompatActivity() {
             someWorker
         )
     }
-
-
 }
 
 

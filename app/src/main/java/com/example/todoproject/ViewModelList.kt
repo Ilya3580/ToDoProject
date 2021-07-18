@@ -4,7 +4,7 @@ package com.example.todoproject
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import dao.Task
+import com.example.todoproject.dao.Task
 
 class ViewModelList: ViewModel() {
 

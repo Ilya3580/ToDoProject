@@ -1,6 +1,6 @@
-package APIService
+package com.example.todoproject.api_Service
 
-import dao.Task
+import com.example.todoproject.dao.Task
 import retrofit2.http.*
 
 interface APIService {

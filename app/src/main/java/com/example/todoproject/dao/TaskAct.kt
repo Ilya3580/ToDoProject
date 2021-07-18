@@ -1,4 +1,4 @@
-package dao
+package com.example.todoproject.dao
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

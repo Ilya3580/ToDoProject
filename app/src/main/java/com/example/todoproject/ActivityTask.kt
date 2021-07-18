@@ -14,9 +14,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.work.*
 import com.example.todoproject.databinding.ActivityTaskBinding
-import dao.DatabaseStorage
-import dao.Task
-import dao.TaskAct
+import com.example.todoproject.dao.DatabaseStorage
+import com.example.todoproject.dao.Task
+import com.example.todoproject.dao.TaskAct
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*

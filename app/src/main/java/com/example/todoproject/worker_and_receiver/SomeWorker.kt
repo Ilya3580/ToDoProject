@@ -1,13 +1,11 @@
-package WorkerAndReceiver
+package com.example.todoproject.worker_and_receiver
 
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.example.todoproject.FunctionsProject
-import dao.DatabaseStorage
-import dao.Task
-import dao.TaskAct
-import io.reactivex.disposables.Disposable
+import com.example.todoproject.dao.DatabaseStorage
+import com.example.todoproject.dao.TaskAct
 import kotlinx.coroutines.*
 
 class SomeWorker(

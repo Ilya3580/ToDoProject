@@ -1,4 +1,4 @@
-package WorkerAndReceiver
+package com.example.todoproject.worker_and_receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context

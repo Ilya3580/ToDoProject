@@ -2,26 +2,30 @@ package com.example.todoproject
 
 import android.content.Context
 import android.content.Intent
-import android.view.ContextMenu
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import dao.DatabaseStorage
-import dao.Task
-import dao.TaskAct
+import com.example.todoproject.dao.DatabaseStorage
+import com.example.todoproject.dao.Task
+import com.example.todoproject.dao.TaskAct
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
+import java.util.logging.Handler
 
 class AdapterRecyclerView(
     private val values : ArrayList<Task>
         ):RecyclerView.Adapter<AdapterRecyclerView.MyViewHolder>(), ItemTouchHelperAdapter {
 
     var flagScope = false
+
+    private lateinit var builder : DatabaseStorage
+    private lateinit var scope : CoroutineScope
     private lateinit var context : Context
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -29,6 +33,8 @@ class AdapterRecyclerView(
             parent, false)
 
         context = parent.context
+        builder = DatabaseStorage.build(context)
+        scope = CoroutineScope(Dispatchers.IO)
 
         return MyViewHolder(itemView)
     }
@@ -61,7 +67,7 @@ class AdapterRecyclerView(
             onClick(values[position])
         }
         holder.statusTask.setOnClickListener {
-            onClick(values[position])
+            taskStatusClick(position)
         }
         holder.infoImageButton.setOnClickListener {
             onClick(values[position])
@@ -87,33 +93,53 @@ class AdapterRecyclerView(
     }
 
     override fun onSwipeLeft(position: Int) {
-        notifyItemChanged(position)
-        updateInformationTask(position, TaskAct.ACT_DELETE)
+        scope.launch {
+            updateInformationTask(position, TaskAct.ACT_DELETE)
+            values.removeAt(position)
+            scope.launch(Dispatchers.Main) {
+                notifyItemRemoved(position)
+            }
+        }
     }
 
     override fun onSwipeRight(position: Int) {
+        taskStatusClick(position)
         notifyItemChanged(position)
-        updateInformationTask(position, TaskAct.ACT_UPDATE)
+        scope.launch {
+            updateInformationTask(position, TaskAct.ACT_UPDATE)
+        }
     }
 
-    private fun updateInformationTask(position: Int, actStatus : Int){
-        val builder = DatabaseStorage.build(context)
-        val scope = CoroutineScope(Dispatchers.IO)
-        scope.launch {
-            if(actStatus == TaskAct.ACT_UPDATE) {
-                builder.taskDao().updateTask(values[position])
-            }else{
-                builder.taskDao().deleteTask(values[position])
-            }
-
-            builder.taskDao().insertTaskAct(TaskAct(values[position].id, actStatus))
+    private suspend fun updateInformationTask(position: Int, actStatus : Int){
+        if(actStatus == TaskAct.ACT_UPDATE) {
+            builder.taskDao().updateTask(values[position])
+        }else{
+            builder.taskDao().deleteTask(values[position])
         }
+
+        builder.taskDao().insertTaskAct(TaskAct(values[position].id, actStatus))
+
+        FunctionsProject.settingWorker(context)
+
     }
 
     private fun onClick(task : Task){
         val intent = Intent(context, ActivityTask :: class.java)
         intent.putExtra("task", task)
         context.startActivity(intent)
+    }
+
+    private fun taskStatusClick(position: Int){
+        if(values[position].done == Task.DONE){
+            values[position].done = Task.NOT_DONE
+        }else{
+            values[position].done = Task.DONE
+        }
+
+        scope.launch {
+            builder.taskDao().updateTask(values[position])
+        }
+        notifyItemChanged(position)
     }
 
 }

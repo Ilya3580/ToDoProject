@@ -1,31 +1,23 @@
 package com.example.todoproject
 
-import APIService.APIService
+import com.example.todoproject.api_Service.APIService
+import com.example.todoproject.worker_and_receiver.SomeWorker
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.os.Handler
-import android.os.Looper
 import android.widget.ProgressBar
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.MutableLiveData
-import dao.DatabaseStorage
-import dao.Task
-import dao.TaskAct
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.work.*
+import com.example.todoproject.dao.Task
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 object FunctionsProject {
     public fun onCreateAlertDialogCalendar(
@@ -104,7 +96,7 @@ object FunctionsProject {
         alert.dismiss()
     }
 
-    public fun userService() : APIService{
+    public fun userService() : APIService {
         val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val builder = chain.request().newBuilder()
@@ -158,4 +150,19 @@ object FunctionsProject {
         return str
     }
 
+    public fun settingWorker(context : Context) {
+        val constraint = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val someWorker = OneTimeWorkRequest.Builder(SomeWorker::class.java)
+            .setConstraints(constraint)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "someWorker",
+            ExistingWorkPolicy.REPLACE,
+            someWorker
+        )
+    }
 }

@@ -1,8 +1,8 @@
-package dao
+package com.example.todoproject.dao
 
 import android.content.Context
 import androidx.room.*
-import dao.Task
+import com.example.todoproject.dao.Task
 import java.util.*
 
 @Database(
