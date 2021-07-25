@@ -38,16 +38,12 @@
             />
         <Constraint
             android:id="@+id/cardView"
-            app:layout_constraintVertical_bias="0.0"
-            android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            android:layout_marginTop="18dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="160dp"
+            android:layout_height="match_parent"
             android:layout_width="match_parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textViewTask" />
         <Constraint
             android:id="@+id/containerIcon"
@@ -92,19 +88,7 @@
             app:layout_constraintLeft_toLeftOf="@+id/textView"
             app:layout_constraintRight_toRightOf="@+id/textView"
             app:layout_constraintBottom_toBottomOf="parent"/>
-        <Constraint
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            android:id="@+id/cardView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintVertical_bias="0.0"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textView"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-             />
+
 
         <Constraint
             android:id="@+id/containerIcon"
@@ -119,6 +103,16 @@
             app:layout_constraintVertical_bias="0.5"
             android:layout_marginRight="25dp"
             />
+
+        <Constraint
+            android:id="@+id/cardView"
+            android:layout_marginTop="40dp"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textViewTask" />
     </ConstraintSet>
 
 

@@ -4,14 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
-import androidx.lifecycle.MutableLiveData
+import com.example.todoproject.viewmodel.MainViewModel
 
-class SomeReceiver(
-    private var mutableDataInternet: MutableLiveData<Boolean>,
+class InternetReceiver(
+    private var mainViewModel: MainViewModel,
 ) : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        mutableDataInternet.value = checkInternet(context)
+        mainViewModel.statusInternet(checkInternet(context))
     }
 
     companion object{

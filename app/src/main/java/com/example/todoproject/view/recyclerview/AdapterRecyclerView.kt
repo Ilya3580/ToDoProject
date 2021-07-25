@@ -1,39 +1,44 @@
-package com.example.todoproject
+package com.example.todoproject.view.recyclerview
 
 import android.content.Context
 import android.content.Intent
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.todoproject.dao.DatabaseStorage
-import com.example.todoproject.dao.Task
-import com.example.todoproject.dao.TaskAct
+import com.example.todoproject.App
+import com.example.todoproject.TaskActivity
+import com.example.todoproject.R
+import com.example.todoproject.database.DatabaseStorage
+import com.example.todoproject.database.Task
+import com.example.todoproject.database.TaskAct
+import com.example.todoproject.network.APIService
+import com.example.todoproject.view.date.CalendarFunction
+import com.example.todoproject.viewmodel.MainViewModel
+import com.example.todoproject.worker_and_receiver.SynchronizeWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
-import java.util.logging.Handler
+import javax.inject.Inject
 
 class AdapterRecyclerView(
-    private val values : ArrayList<Task>
+    var values : ArrayList<Task>,
+    var mainViewModel : MainViewModel,
+    var buildDatabase: DatabaseStorage,
         ):RecyclerView.Adapter<AdapterRecyclerView.MyViewHolder>(), ItemTouchHelperAdapter {
 
-    var flagScope = false
-
-    private lateinit var builder : DatabaseStorage
-    private lateinit var scope : CoroutineScope
     private lateinit var context : Context
+    private lateinit var scope : CoroutineScope
+
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.recycler_view_item,
+        val itemView = LayoutInflater.from(parent.context).inflate(
+            R.layout.recycler_view_item,
             parent, false)
-
         context = parent.context
-        builder = DatabaseStorage.build(context)
         scope = CoroutineScope(Dispatchers.IO)
 
         return MyViewHolder(itemView)
@@ -41,7 +46,7 @@ class AdapterRecyclerView(
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         if(position == 0){
-            flagScope = true
+            mainViewModel.flagScope = false
         }
 
         holder.textTitleTextView.text = values[position].text
@@ -58,7 +63,7 @@ class AdapterRecyclerView(
             }
         }
 
-        holder.textTextView.text = FunctionsProject.convertDate(task, context)
+        holder.textTextView.text = CalendarFunction.convertDate(task, context)
 
         holder.textTitleTextView.setOnClickListener {
             onClick(values[position])
@@ -78,7 +83,7 @@ class AdapterRecyclerView(
 
     override fun onViewDetachedFromWindow(holder: MyViewHolder) {
         if(holder.adapterPosition == 0){
-            flagScope = false
+            mainViewModel.flagScope = true
         }
         super.onViewDetachedFromWindow(holder)
     }
@@ -112,19 +117,17 @@ class AdapterRecyclerView(
 
     private suspend fun updateInformationTask(position: Int, actStatus : Int){
         if(actStatus == TaskAct.ACT_UPDATE) {
-            builder.taskDao().updateTask(values[position])
+            buildDatabase.taskDao().updateTask(values[position])
         }else{
-            builder.taskDao().deleteTask(values[position])
+            buildDatabase.taskDao().deleteTask(values[position])
         }
 
-        builder.taskDao().insertTaskAct(TaskAct(values[position].id, actStatus))
-
-        FunctionsProject.settingWorker(context)
+        buildDatabase.taskDao().insertTaskAct(TaskAct(values[position].id, actStatus))
 
     }
 
     private fun onClick(task : Task){
-        val intent = Intent(context, ActivityTask :: class.java)
+        val intent = Intent(context, TaskActivity :: class.java)
         intent.putExtra("task", task)
         context.startActivity(intent)
     }
@@ -137,7 +140,7 @@ class AdapterRecyclerView(
         }
 
         scope.launch {
-            builder.taskDao().updateTask(values[position])
+            buildDatabase.taskDao().updateTask(values[position])
         }
         notifyItemChanged(position)
     }

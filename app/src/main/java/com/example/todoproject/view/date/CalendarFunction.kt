@@ -1,34 +1,25 @@
-package com.example.todoproject
+package com.example.todoproject.view.date
 
-import com.example.todoproject.api_Service.APIService
-import com.example.todoproject.worker_and_receiver.SomeWorker
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import android.widget.ProgressBar
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.MutableLiveData
-import androidx.work.*
-import com.example.todoproject.dao.Task
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import com.example.todoproject.R
+import com.example.todoproject.TaskActivity
+import com.example.todoproject.database.Task
+import com.example.todoproject.viewmodel.TaskActivityViewModel
 import java.util.*
-import java.util.concurrent.TimeUnit
 
-object FunctionsProject {
+object CalendarFunction {
     public fun onCreateAlertDialogCalendar(
         context: Context,
-        viewModel: MutableLiveData<Calendar>,
+        viewModel: TaskActivityViewModel,
         timeUnix: Long
     ) {
         val dateSetting = DatePickerDialog.OnDateSetListener { view, year, month, dayOfMonth ->
             val calendar = Calendar.getInstance()
             calendar.set(year, month, dayOfMonth, 0, 0)
-            viewModel.value = calendar
+            viewModel.updateDate(calendar)
         }
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = timeUnix
@@ -50,7 +41,7 @@ object FunctionsProject {
 
     public fun onCreateAlertDialogTime(
         context: Context,
-        viewModel: MutableLiveData<Calendar>,
+        viewModel: TaskActivityViewModel,
         timeUnix: Long
     ) {
         val calendar = Calendar.getInstance()
@@ -60,7 +51,7 @@ object FunctionsProject {
                 calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH), hourOfDay, minute
             )
-            viewModel.value = calendar
+            viewModel.updateDate(calendar)
         }
 
         val timeDialog = TimePickerDialog(
@@ -74,52 +65,6 @@ object FunctionsProject {
         timeDialog.getButton(DatePickerDialog.BUTTON_POSITIVE)
             .setTextColor(context.resources.getColor(R.color.Blue))
 
-    }
-
-    public fun startProgressBar(context: Context): AlertDialog {
-        val builder = AlertDialog.Builder(context)
-        val progressBar = ProgressBar(context)
-
-        builder.setView(progressBar)
-
-        builder.setCancelable(false)
-
-        val alert = builder.create()
-        alert.show()
-
-        alert.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        alert.window?.setLayout(300, 300)
-        return alert
-    }
-
-    public fun stopProgressBar(alert: AlertDialog) {
-        alert.dismiss()
-    }
-
-    public fun userService() : APIService {
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val builder = chain.request().newBuilder()
-                val request = builder
-                    .addHeader("Authorization", "Bearer 8142b4fa951c4dd99fda81aab42b745c")
-                    .build()
-
-                chain.proceed(request)
-            }
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
-            .readTimeout(1, TimeUnit.MINUTES)
-            .writeTimeout(1, TimeUnit.MINUTES)
-            .build()
-
-        val retrofit = Retrofit.Builder()
-            .client(client)
-            .baseUrl("https://d5dps3h13rv6902lp5c8.apigw.yandexcloud.net")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-
-        return retrofit.create(APIService::class.java)
     }
 
     public fun convertDate(task : Task, context: Context) : String{
@@ -148,21 +93,5 @@ object FunctionsProject {
         }
 
         return str
-    }
-
-    public fun settingWorker(context : Context) {
-        val constraint = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val someWorker = OneTimeWorkRequest.Builder(SomeWorker::class.java)
-            .setConstraints(constraint)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "someWorker",
-            ExistingWorkPolicy.REPLACE,
-            someWorker
-        )
     }
 }

@@ -1,4 +1,4 @@
-package com.example.todoproject
+package com.example.todoproject.view.recyclerview
 
 import android.content.Context
 import android.graphics.*
@@ -6,6 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.example.todoproject.R
 import kotlin.math.abs
 
 class SwipeToLeftCallback(context: Context, var adapter : ItemTouchHelperAdapter) :

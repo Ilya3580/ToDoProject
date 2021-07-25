@@ -1,9 +1,7 @@
-package com.example.todoproject.dao
+package com.example.todoproject.database
 
 import android.content.Context
 import androidx.room.*
-import com.example.todoproject.dao.Task
-import java.util.*
 
 @Database(
     version = 1,

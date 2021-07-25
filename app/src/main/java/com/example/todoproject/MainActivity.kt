@@ -1,153 +1,160 @@
 package com.example.todoproject
 
-import com.example.todoproject.api_Service.APIService
-import com.example.todoproject.worker_and_receiver.SomeWorker
+import android.content.BroadcastReceiver
+import com.example.todoproject.network.APIService
 import android.content.Intent
+import android.content.IntentFilter
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.work.*
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
+import com.example.todoproject.database.DatabaseStorage
 import com.example.todoproject.databinding.ActivityMainBinding
-import com.example.todoproject.dao.DatabaseStorage
-import com.example.todoproject.dao.Task
+import com.example.todoproject.database.Task
+import com.example.todoproject.view.recyclerview.AdapterRecyclerView
+import com.example.todoproject.view.recyclerview.ItemTouchHelperAdapter
+import com.example.todoproject.view.recyclerview.SwipeToLeftCallback
+import com.example.todoproject.view.recyclerview.SwipeToRightCallback
+import com.example.todoproject.viewmodel.MainViewModel
+import com.example.todoproject.worker_and_receiver.InternetReceiver
+import com.example.todoproject.worker_and_receiver.SynchronizeWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.*
+import javax.inject.Inject
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
+    @Inject
+    lateinit var buildAPIService: APIService
+
+    @Inject
+    lateinit var buildDatabase: DatabaseStorage
+
+    @Inject
+    lateinit var oneTimeWorkRequest: OneTimeWorkRequest
+
+    @Inject
+    lateinit var periodicWorkRequest: PeriodicWorkRequest
 
     private lateinit var binding: ActivityMainBinding
-    private var adapterRecyclerView: AdapterRecyclerView? = null
-    private lateinit var mutableLiveDataDate: MutableLiveData<Calendar>
-    private lateinit var apiService: APIService
+    private val mainViewModel: MainViewModel by viewModels()
 
-    private val viewModelList: ViewModelList by viewModels()
+    private lateinit var receiver : BroadcastReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        updateData(intent.getSerializableExtra("idName")?.toString())
+        (application as App).getComponent().inject(this)
+        settingReceiver()
+        settingRecyclerView()
+        if (mainViewModel.flagScope) {
+            binding.motionLayout.transitionToEnd()
+        }
 
-        mutableLiveDataDate = MutableLiveData(null)
-
-        binding.iconCalendar.setOnClickListener {
-            FunctionsProject.onCreateAlertDialogCalendar(
-                this,
-                mutableLiveDataDate,
-                Calendar.getInstance().timeInMillis
-            )
+        val taskId = intent.getSerializableExtra("task") as? Task
+        if(taskId != null){
+            oneWorkStart()
         }
 
         binding.actionButton.setOnClickListener {
-            val intent = Intent(this, ActivityTask::class.java)
+            val intent = Intent(this, TaskActivity::class.java)
             startActivity(intent)
         }
 
-        mutableLiveDataDate.observe(this, {
-            //TODO("Действие с числом календаря")
+        mainViewModel.userList.observe(this, {
+            updateValuesList(it)
         })
 
+        mainViewModel.internetConnection?.observe(this, {
+            if (it && !(application as App).flagUpdateData) {
+                (application as App).flagUpdateData = true
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        SynchronizeWorker.synchronizeTasks(
+                            mainViewModel,
+                            buildAPIService,
+                            buildDatabase
+                        )
+                    } catch (e: Exception) {
+                        (application as App).flagUpdateData = false
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            mainViewModel.updateListUsers(buildDatabase.taskDao().listTask())
+                        }
+                    }
+                }
+            }
+        })
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
+    override fun onPause() {
+        super.onPause()
+        periodWorkStart()
         try {
-            outState.putBoolean(
-                "flagScope",
-                (binding.recyclerView.adapter as AdapterRecyclerView).flagScope
-            )
-        } catch (e: Exception) {
-        }
-        super.onSaveInstanceState(outState)
-    }
+            unregisterReceiver(receiver)
+        }catch (e : Exception){
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        val flagScope = savedInstanceState.getBoolean("flagScope")
-        if (!flagScope) {
-            binding.motionLayout.transitionToEnd()
-        }
-        super.onRestoreInstanceState(savedInstanceState)
-    }
-
-    private fun updateData(id: String?) {
-        apiService = FunctionsProject.userService()
-        val builder = DatabaseStorage.build(applicationContext)
-        val handler = Handler(Looper.getMainLooper())
-        Log.d("TAGA", id.toString())
-        if (id == null) {
-            if (viewModelList.userList.value?.count() ?: 0 > 0) {
-                settingRecyclerView(viewModelList.userList.value!!)
-                return
-            } else {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val itemList = builder.taskDao().listTask()
-                    handler.post {
-                        settingRecyclerView(itemList)
-                    }
-                }
-
-            }
-        } else {
-            if (viewModelList.userList.value?.count() ?: 0 > 0) {
-                settingRecyclerView(viewModelList.userList.value!!)
-                return
-            } else {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val itemList = builder.taskDao().listTask()
-                    handler.post {
-                        viewModelList.userList.value = itemList
-                        settingWorker()
-                        settingRecyclerView(itemList)
-                    }
-                }
-            }
         }
     }
 
-    private fun settingRecyclerView(lst: List<Task>) {
+    private fun settingRecyclerView() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        adapterRecyclerView = AdapterRecyclerView(lst as ArrayList<Task>)
+        if (mainViewModel.adapterRecyclerView == null) {
+            mainViewModel.adapterRecyclerView =
+                AdapterRecyclerView(ArrayList(), mainViewModel, buildDatabase)
+        }
 
         val callbackLeft: ItemTouchHelper.Callback =
-            SwipeToLeftCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)
+            SwipeToLeftCallback(this, mainViewModel.adapterRecyclerView as ItemTouchHelperAdapter)
         val touchHelperLeft = ItemTouchHelper(callbackLeft)
         touchHelperLeft.attachToRecyclerView(binding.recyclerView)
 
         val callbackRight: ItemTouchHelper.Callback =
-            SwipeToRightCallback(this, adapterRecyclerView as ItemTouchHelperAdapter)
+            SwipeToRightCallback(this, mainViewModel.adapterRecyclerView as ItemTouchHelperAdapter)
         val touchHelperRight = ItemTouchHelper(callbackRight)
         touchHelperRight.attachToRecyclerView(binding.recyclerView)
 
-        binding.recyclerView.adapter = adapterRecyclerView
+        binding.recyclerView.adapter = mainViewModel.adapterRecyclerView
+    }
+
+    private fun updateValuesList(lst: List<Task>) {
+        mainViewModel.adapterRecyclerView?.values = lst.toCollection(ArrayList())
+        mainViewModel.adapterRecyclerView?.notifyDataSetChanged()
     }
 
     private fun settingReceiver() {
-
+        if (mainViewModel.internetConnection == null) {
+            mainViewModel.internetConnection =
+                MutableLiveData(InternetReceiver.checkInternet(applicationContext))
+        }
+        receiver = InternetReceiver(mainViewModel)
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+        registerReceiver(receiver, intentFilter)
     }
 
-    private fun settingWorker() {
-        val constraint = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val someWorker = OneTimeWorkRequest.Builder(SomeWorker::class.java)
-            .setConstraints(constraint)
-            .build()
-
+    private fun oneWorkStart() {
         WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-            "someWorker",
+            "mainWorker",
             ExistingWorkPolicy.REPLACE,
-            someWorker
+            oneTimeWorkRequest
+        )
+    }
+
+    private fun periodWorkStart() {
+        WorkManager.getInstance(applicationContext).enqueue(
+            periodicWorkRequest
         )
     }
 }

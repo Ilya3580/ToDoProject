@@ -4,49 +4,49 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.PopupMenu
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
-import androidx.work.*
+import com.example.todoproject.database.DatabaseStorage
 import com.example.todoproject.databinding.ActivityTaskBinding
-import com.example.todoproject.dao.DatabaseStorage
-import com.example.todoproject.dao.Task
-import com.example.todoproject.dao.TaskAct
+import com.example.todoproject.database.Task
+import com.example.todoproject.database.TaskAct
+import com.example.todoproject.network.APIService
+import com.example.todoproject.view.alert.FunctionAlertDialog
+import com.example.todoproject.view.date.CalendarFunction
+import com.example.todoproject.viewmodel.TaskActivityViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 
-class ActivityTask : AppCompatActivity() {
+class TaskActivity : AppCompatActivity() {
+    @Inject
+    lateinit var buildDatabase : DatabaseStorage
+
     private lateinit var binding: ActivityTaskBinding
 
-    @Volatile
-    private lateinit var task: Task
-    private var flagSave = false
+    private val viewModel : TaskActivityViewModel by viewModels()
 
-    private lateinit var viewModelCalendar: MutableLiveData<Calendar>
-    private lateinit var viewModelTime: MutableLiveData<Calendar>
-    private lateinit var builder: DatabaseStorage
+    private var flagShowCalendar = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityTaskBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModelCalendar = MutableLiveData(null)
-        viewModelTime = MutableLiveData(null)
-        builder = DatabaseStorage.build(applicationContext)
+        (application as App).getComponent().inject(this)
 
-        task = if (savedInstanceState?.getSerializable("task") != null) {
-            flagSave = savedInstanceState.getSerializable("flagSave") as Boolean
-            savedInstanceState.getSerializable("task") as Task
-        } else {
-            flagSave = intent.getSerializableExtra("task") != null
-            intent.getSerializableExtra("task") as? Task ?: Task(UUID.randomUUID().toString())
+        if(viewModel.task == null){
+            viewModel.task = intent.getSerializableExtra("task") as? Task ?: Task(UUID.randomUUID().toString())
+        }
+
+        if(viewModel.flagSave == null){
+            viewModel.flagSave  = intent.getSerializableExtra("task") != null
         }
 
         fixTask()
@@ -64,13 +64,12 @@ class ActivityTask : AppCompatActivity() {
         }
 
         binding.contentScrolling.deadlineContainer.setOnClickListener {
-            if (!binding.contentScrolling.switchDeadline.isChecked) {
-                FunctionsProject.onCreateAlertDialogCalendar(
-                    this,
-                    viewModelCalendar,
-                    Calendar.getInstance().time.time
-                )
-            }
+            flagShowCalendar = false
+            CalendarFunction.onCreateAlertDialogCalendar(
+                this,
+                viewModel,
+                Calendar.getInstance().time.time
+            )
         }
 
         binding.contentScrolling.switchDeadline.setOnClickListener {
@@ -81,29 +80,17 @@ class ActivityTask : AppCompatActivity() {
             clickDelete()
         }
 
-        viewModelCalendar.observe(this, {
-            if (it != null) {
-                task.deadline = it.timeInMillis
-                fixTextDeadline()
-                FunctionsProject.onCreateAlertDialogTime(
-                    this, viewModelTime,
-                    task.deadline!!
+        viewModel.calendarLivedata.observe(this, {
+            if(!flagShowCalendar){
+                flagShowCalendar = true
+                CalendarFunction.onCreateAlertDialogCalendar(
+                    this,
+                    viewModel,
+                    Calendar.getInstance().time.time
                 )
             }
+            fixTextDeadline()
         })
-
-        viewModelTime.observe(this, {
-            if (it != null) {
-                task.deadline = it.timeInMillis
-                fixTextDeadline()
-            }
-        })
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.putSerializable("task", task)
-        outState.putBoolean("flagSave", flagSave)
-        super.onSaveInstanceState(outState)
     }
 
     private fun showMenu(view: View?) {
@@ -111,18 +98,18 @@ class ActivityTask : AppCompatActivity() {
         menu.setOnMenuItemClickListener { item: MenuItem? ->
             when (item?.itemId) {
                 R.id.item_not -> {
-                    task.importance = Task.IMPORTANCE
+                    viewModel.task?.importance = Task.IMPORTANCE
                     binding.contentScrolling.statusImportance.text =
                         resources.getString(R.string.no)
                 }
                 R.id.item_little -> {
-                    task.importance = Task.IMPORTANCE_LOW
+                    viewModel.task?.importance = Task.IMPORTANCE_LOW
                     binding.contentScrolling.statusImportance.text =
                         resources.getString(R.string.little)
                 }
 
                 R.id.item_big -> {
-                    task.importance = Task.IMPORTANCE_BASIC
+                    viewModel.task?.importance = Task.IMPORTANCE_BASIC
                     binding.contentScrolling.statusImportance.text =
                         resources.getString(R.string.big)
                 }
@@ -134,8 +121,8 @@ class ActivityTask : AppCompatActivity() {
     }
 
     private fun fixTask() {
-        binding.contentScrolling.editTextTask.setText(task.text)
-        when (task.importance) {
+        binding.contentScrolling.editTextTask.setText(viewModel.task?.text)
+        when (viewModel.task?.importance) {
             Task.IMPORTANCE -> {
                 binding.contentScrolling.statusImportance.text = resources.getString(R.string.no)
             }
@@ -148,7 +135,7 @@ class ActivityTask : AppCompatActivity() {
             }
         }
 
-        if (flagSave) {
+        if (viewModel.flagSave!!) {
             binding.contentScrolling.deleteImage.setColorFilter(resources.getColor(R.color.Red))
             binding.contentScrolling.deleteText.setTextColor(resources.getColor(R.color.Red))
         } else {
@@ -158,9 +145,9 @@ class ActivityTask : AppCompatActivity() {
     }
 
     private fun fixTextDeadline() {
-        if (task.deadline != null) {
+        if (viewModel.task?.deadline != null) {
             binding.contentScrolling.deadlineText.text =
-                FunctionsProject.convertDate(task, applicationContext)
+                CalendarFunction.convertDate(viewModel.task!!, applicationContext)
             binding.contentScrolling.switchDeadline.isChecked = true
             binding.contentScrolling.deadlineText.visibility = View.VISIBLE
         }
@@ -168,47 +155,49 @@ class ActivityTask : AppCompatActivity() {
     }
 
     private fun clickSaveTextView() {
-        val builder = DatabaseStorage.build(applicationContext)
-        val alert = FunctionsProject.startProgressBar(this)
+        val alert = FunctionAlertDialog.startProgressBar(this)
+        var taskAct = TaskAct(viewModel.task!!.id, TaskAct.ACT_UPDATE)
+        viewModel.task?.text = binding.contentScrolling.editTextTask.text.toString()
+        viewModel.task?.update_at = Calendar.getInstance().time.time
+        if (!viewModel.flagSave!!) {
+            viewModel.task?.created_at = Calendar.getInstance().time.time
+            taskAct.act = TaskAct.ACT_ADD
+        }
+        if (viewModel.task?.deadline == null) {
+            viewModel.task?.deadline = Calendar.getInstance().timeInMillis
+        }
 
-        task.text = binding.contentScrolling.editTextTask.text.toString()
-        task.update_at = Calendar.getInstance().time.time
-        if (!flagSave) {
-            task.created_at = Calendar.getInstance().time.time
-        }
-        if (task.deadline == null) {
-            task.deadline = Calendar.getInstance().timeInMillis
-        }
+        viewModel.task!!.update_at = viewModel.task!!.update_at!!/1000
+        viewModel.task!!.deadline = viewModel.task!!.deadline!!/1000
+        viewModel.task!!.created_at = viewModel.task!!.created_at!!/1000
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val taskAct = TaskAct(task.id, TaskAct.ACT_ADD)
-            builder.taskDao().insertTaskAct(taskAct)
-            builder.taskDao().insertTask(task)
+            buildDatabase.taskDao().insertTaskAct(taskAct)
+            buildDatabase.taskDao().insertTask(viewModel.task!!)
             startMainActivity(alert)
         }
     }
 
     private fun clickSwitch() {
         if (binding.contentScrolling.switchDeadline.isChecked) {
-            binding.contentScrolling.switchDeadline.isChecked = false
-            FunctionsProject.onCreateAlertDialogCalendar(
+            CalendarFunction.onCreateAlertDialogCalendar(
                 this,
-                viewModelCalendar,
+                viewModel,
                 Calendar.getInstance().time.time
             )
         } else {
-            task.deadline = null
+            viewModel.task?.deadline = null
             binding.contentScrolling.deadlineText.visibility = View.GONE
         }
     }
 
     private fun clickDelete() {
-        if (flagSave) {
-            val alert = FunctionsProject.startProgressBar(this)
+        if (viewModel.flagSave!!) {
+            val alert = FunctionAlertDialog.startProgressBar(this)
             lifecycleScope.launch(Dispatchers.IO) {
-                val taskAct = TaskAct(task.id, TaskAct.ACT_DELETE)
-                builder.taskDao().insertTaskAct(taskAct)
-                builder.taskDao().deleteTask(task)
+                val taskAct = TaskAct(viewModel.task!!.id, TaskAct.ACT_DELETE)
+                buildDatabase.taskDao().insertTaskAct(taskAct)
+                buildDatabase.taskDao().deleteTask(viewModel.task!!)
                 startMainActivity(alert)
             }
         }
@@ -217,12 +206,11 @@ class ActivityTask : AppCompatActivity() {
     private fun startMainActivity(alert: AlertDialog) {
         val handler = Handler(Looper.getMainLooper())
         handler.post {
-            FunctionsProject.stopProgressBar(alert)
-            val intent = Intent(this@ActivityTask, MainActivity::class.java)
-            intent.putExtra("idName", task.id)
+            alert.dismiss()
+            val intent = Intent(this@TaskActivity, MainActivity::class.java)
+            intent.putExtra("idName", viewModel.task?.id)
             startActivity(intent)
 
         }
     }
-
 }
